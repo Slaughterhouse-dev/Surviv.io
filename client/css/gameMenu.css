@@ -196,7 +196,7 @@ body.game-menu-open #ui-game {
 
 .modal-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     padding: 16px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -207,8 +207,10 @@ body.game-menu-open #ui-game {
 /* Search */
 .header-search {
     position: relative;
-    flex: 1;
-    max-width: 400px;
+    flex: 0 0 auto;
+    width: 320px;
+    min-width: 320px;
+    max-width: 320px;
 }
 
 .search-icon {
@@ -223,12 +225,13 @@ body.game-menu-open #ui-game {
 }
 
 .search-input {
-    width: 100%;
+    /* width: calc(100% - 6vh); */
+    width: 242px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 6px;
     color: #fff;
-    padding: 9px 12px 9px 36px;
+    padding: 9px 40px 9px 36px;
     font-size: 13px;
     font-family: 'Inter', sans-serif;
     outline: none;
@@ -255,28 +258,97 @@ body.game-menu-open #ui-game {
     color: #3EC99A;
 }
 
+.search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    z-index: 1;
+    animation: fadeInScale 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) scale(0);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
+}
+
+.search-clear:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
 /* Search Results Dropdown */
 .search-results-wrapper {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 4px);
     left: 0;
-    right: 0;
+    width: 320px;
+    max-width: 320px;
     z-index: 1000;
-    padding-top: 4px;
+    animation: slideDownFade 0.5s ease-out;
+    box-sizing: border-box;
+    transform-origin: top center;
+    overflow: hidden;
+}
+
+@keyframes slideDownFade {
+    0% {
+        opacity: 0;
+        transform: scaleY(0);
+    }
+    100% {
+        opacity: 1;
+        transform: scaleY(1);
+    }
 }
 
 .search-results {
-    background: #0e0e12;
+    background: rgba(14, 14, 18, 0.95);
+    backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 6px;
     max-height: 400px;
     overflow-y: auto;
     overflow-x: hidden;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    animation: slideDown 0.2s ease-out;
 }
 
-@keyframes slideDown {
+.search-results-content {
+    padding: 8px;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    animation: searchItemFadeIn 0.4s ease-out backwards;
+    min-height: 36px;
+}
+
+@keyframes searchItemFadeIn {
     from {
         opacity: 0;
         transform: translateY(-10px);
@@ -287,32 +359,52 @@ body.game-menu-open #ui-game {
     }
 }
 
-.search-results-content {
-    padding: 8px;
-    max-width: 100%;
-    box-sizing: border-box;
+.search-result-item:hover {
+    background: rgba(62, 201, 154, 0.1);
+    border-color: rgba(62, 201, 154, 0.2);
 }
 
-.search-results .setting-item {
-    margin-bottom: 4px;
-    background: rgba(0, 0, 0, 0.3);
-    transform: none;
-    box-shadow: none;
-    padding: 10px 12px;
-    max-width: 100%;
-    box-sizing: border-box;
+.search-result-item:last-child {
+    margin-bottom: 0;
 }
 
-.search-results .setting-item:hover {
-    transform: none;
-}
-
-.search-result-group {
+.search-result-tab {
     font-size: 10px;
     color: #3EC99A;
+    background: rgba(62, 201, 154, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin-bottom: 4px;
-    padding-left: 4px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.search-result-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: rgba(62, 201, 154, 0.1);
+    border-radius: 6px;
+    color: #3EC99A;
+    flex-shrink: 0;
+}
+
+.search-result-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.search-result-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.search-result-label {
+    font-size: 12.5px;
+    color: #e0e0e0;
 }
 
 .no-results {
@@ -355,6 +447,7 @@ body.game-menu-open #ui-game {
     justify-content: center;
     border-radius: 4px;
     flex-shrink: 0;
+    margin-left: auto;
 }
 
 .close:hover {
@@ -366,9 +459,19 @@ body.game-menu-open #ui-game {
 /* Content Area */
 .modal-body {
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 20px;
     background: rgba(0, 0, 0, 0.2);
+    position: relative;
+}
+
+.smooth-scroll-content {
+    width: 100%;
+    pointer-events: auto;
+}
+
+.smooth-scroll-content * {
+    pointer-events: auto;
 }
 
 .modal-body::-webkit-scrollbar {
@@ -614,6 +717,12 @@ body.game-menu-open #ui-game {
     -webkit-appearance: none;
     appearance: none;
     transition: background 0.3s ease;
+    cursor: grab;
+}
+
+.custom-slider:active,
+.custom-slider.dragging {
+    cursor: grabbing;
 }
 
 .custom-slider:hover {
@@ -674,6 +783,163 @@ body.game-menu-open #ui-game {
 }
 
 /* Dropdown */
+.custom-dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 140px;
+}
+
+.custom-dropdown-button {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    color: #e0e0e0;
+    padding: 6px 10px 6px 10px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+}
+
+.custom-dropdown-button:hover {
+    border-color: rgba(62, 201, 154, 0.3);
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.custom-dropdown-button:focus,
+.custom-dropdown-button.active {
+    border-color: rgba(62, 201, 154, 0.5);
+    box-shadow: 0 0 0 3px rgba(62, 201, 154, 0.12);
+}
+
+.dropdown-selected {
+    flex: 1;
+    overflow: hidden;
+    font-size: 15px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dropdown-arrow {
+    flex-shrink: 0;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #888;
+    width: 16px;
+    height: 16px;
+    margin-left: auto;
+    margin-top: 2px;
+}
+
+.custom-dropdown-button.active .dropdown-arrow {
+    transform: rotate(180deg);
+    color: #3EC99A;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #0e0e12;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    overflow: hidden;
+    transform-origin: top;
+    animation: dropdownOpen 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dropdownOpen {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scaleY(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scaleY(1);
+    }
+}
+
+.dropdown-menu.closing {
+    animation: dropdownClose 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes dropdownClose {
+    from {
+        opacity: 1;
+        transform: translateY(0) scaleY(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px) scaleY(0.8);
+    }
+}
+
+.dropdown-item {
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    animation: dropdownItemFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+@keyframes dropdownItemFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.dropdown-item:hover,
+.dropdown-item.focused {
+    background: rgba(62, 201, 154, 0.1);
+    color: #fff;
+}
+
+.dropdown-item.selected {
+    color: #3EC99A;
+    font-weight: 500;
+    padding-right: 36px;
+}
+
+.dropdown-item.selected::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%) scale(1);
+    width: 16px;
+    height: 16px;
+    background-image: url('../css/svg/checkmark.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    animation: checkmarkScale 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes checkmarkScale {
+    from {
+        transform: translateY(-50%) scale(0);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(-50%) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Old dropdown - keep for compatibility */
 .custom-dropdown {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -792,4 +1058,74 @@ body.game-menu-open #ui-game {
 
 .custom-input:focus::placeholder {
     color: #777;
+}
+
+/* Number Input - кастомизация стрелок */
+.number-input-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.custom-number-input {
+    padding-right: 32px;
+}
+
+/* Убираем стандартные стрелки */
+.custom-number-input::-webkit-inner-spin-button,
+.custom-number-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.custom-number-input {
+    -moz-appearance: textfield;
+}
+
+/* Кастомные кнопки */
+.number-controls {
+    position: absolute;
+    right: 1px;
+    top: 1px;
+    bottom: 1px;
+    display: flex;
+    flex-direction: column;
+    width: 24px;
+    border-radius: 0 5px 5px 0;
+    overflow: hidden;
+}
+
+.number-btn {
+    flex: 1;
+    background: rgba(62, 201, 154, 0.1);
+    border: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    color: #888;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+    outline: none;
+}
+
+.number-btn:hover {
+    background: rgba(62, 201, 154, 0.2);
+    color: #3EC99A;
+}
+
+.number-btn:active {
+    background: rgba(62, 201, 154, 0.3);
+}
+
+.number-btn:focus {
+    outline: none;
+}
+
+.number-up {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.number-btn svg {
+    pointer-events: none;
 }
