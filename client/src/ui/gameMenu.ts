@@ -4,6 +4,10 @@ export class GameMenu {
     isActive = false;
     menuElement: JQuery;
     smoothScroll: SmoothScroll | null = null;
+    smoothSliders: Map<HTMLInputElement, SmoothSlider> = new Map();
+    ease_show = 200; // Длительность анимации открытия в ms (быстро, но видна анимация)
+    ease_hide = 200; // Длительность анимации закрытия в ms
+    isAnimating = false; // Флаг анимации
 
     constructor() {
         // Создаем HTML для игрового меню
@@ -360,7 +364,9 @@ export class GameMenu {
     private setupButtons() {
         const closeBtn = this.menuElement.find(".close");
         
-        closeBtn.on("click", () => {
+        closeBtn.on("click", (e) => {
+            e.stopPropagation();
+            console.log("Close button clicked");
             this.hide();
         });
 
@@ -374,16 +380,8 @@ export class GameMenu {
             this.hide();
             // Здесь можно добавить логику выхода из игры
         });
-
-        // Предотвращаем закрытие меню при клике на оверлей
-        this.menuElement.on("click", (e) => {
-            if (e.target === this.menuElement[0]) {
-                // Клик по оверлею - ничего не делаем
-                e.stopPropagation();
-            }
-        });
-
-        // Предотвращаем всплытие событий из контента меню
+        
+        // Предотвращаем всплытие кликов из контента
         this.menuElement.find(".game-menu-content").on("click", (e) => {
             e.stopPropagation();
         });
@@ -412,7 +410,7 @@ export class GameMenu {
             });
         });
 
-        // Sliders - простая версия без lerp
+        // Sliders - простая версия без lerp (smooth sliders инициализируются отдельно)
         $(document).off("input", ".custom-slider").on("input", ".custom-slider", function() {
             const value = $(this).val();
             $(this).siblings(".slider-value").text(value + "%");
@@ -563,77 +561,90 @@ export class GameMenu {
     }
 
     private setupDropdown() {
-        const dropdownButton = this.menuElement.find(".custom-dropdown-button");
-        const dropdownMenu = this.menuElement.find(".dropdown-menu");
-        const dropdownItems = this.menuElement.find(".dropdown-item");
-        let focusedIndex = -1;
+        // Используем .each() для работы со всеми dropdown'ами
+        this.menuElement.find(".custom-dropdown-wrapper").each((index, wrapper) => {
+            const $wrapper = $(wrapper);
+            const dropdownButton = $wrapper.find(".custom-dropdown-button");
+            const dropdownMenu = $wrapper.find(".dropdown-menu");
+            const dropdownItems = $wrapper.find(".dropdown-item");
+            let focusedIndex = -1;
 
-        // Set animation delay for each item dynamically
-        dropdownItems.each((i, el) => {
-            $(el).css('animation-delay', `${(i + 1) * 0.02}s`);
-        });
+            // Set animation delay for each item dynamically
+            dropdownItems.each((i, el) => {
+                $(el).css('animation-delay', `${(i + 1) * 0.02}s`);
+            });
 
-        // Toggle dropdown on button click
-        dropdownButton.off("click").on("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const isOpen = dropdownMenu.is(":visible");
-            
-            if (isOpen) {
-                // Close dropdown
-                dropdownMenu.addClass("closing");
-                setTimeout(() => {
-                    dropdownMenu.hide().removeClass("closing");
-                    dropdownButton.removeClass("active");
-                }, 150);
-            } else {
-                // Open dropdown
-                dropdownMenu.show();
-                dropdownButton.addClass("active");
-                focusedIndex = -1;
-            }
-        });
-
-        // Handle item selection
-        dropdownItems.each(function() {
-            $(this).off("click").on("click", function(e) {
+            // Toggle dropdown on button click
+            dropdownButton.off("click").on("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                const value = $(this).data("value");
-                const label = $(this).text();
+                const isOpen = dropdownMenu.is(":visible");
                 
-                // Update button text
-                dropdownButton.find(".dropdown-selected").text(label);
-                
-                // Update selected state
-                dropdownItems.removeClass("selected");
-                $(this).addClass("selected");
-                
-                // Close dropdown
-                dropdownMenu.addClass("closing");
-                setTimeout(() => {
-                    dropdownMenu.hide().removeClass("closing");
-                    dropdownButton.removeClass("active");
-                }, 150);
+                if (isOpen) {
+                    // Close dropdown
+                    dropdownMenu.addClass("closing");
+                    setTimeout(() => {
+                        dropdownMenu.hide().removeClass("closing");
+                        dropdownButton.removeClass("active");
+                    }, 150);
+                } else {
+                    // Open dropdown
+                    dropdownMenu.show();
+                    dropdownButton.addClass("active");
+                    focusedIndex = -1;
+                }
+            });
+
+            // Handle item selection
+            dropdownItems.each(function() {
+                $(this).off("click").on("click", function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const value = $(this).data("value");
+                    const label = $(this).text();
+                    
+                    // Update button text
+                    dropdownButton.find(".dropdown-selected").text(label);
+                    
+                    // Update selected state
+                    dropdownItems.removeClass("selected");
+                    $(this).addClass("selected");
+                    
+                    // Close dropdown
+                    dropdownMenu.addClass("closing");
+                    setTimeout(() => {
+                        dropdownMenu.hide().removeClass("closing");
+                        dropdownButton.removeClass("active");
+                    }, 150);
+                });
+            });
+
+            // Hover effect for keyboard navigation
+            dropdownItems.on("mouseenter", function() {
+                focusedIndex = dropdownItems.index(this);
+                dropdownItems.removeClass("focused");
+                $(this).addClass("focused");
             });
         });
 
-        // Keyboard navigation
+        // Keyboard navigation (глобальный обработчик)
         $(document).off("keydown.dropdown").on("keydown.dropdown", (e) => {
-            const isOpen = dropdownMenu.is(":visible");
+            const openDropdown = this.menuElement.find(".dropdown-menu:visible");
+            if (openDropdown.length === 0) return;
             
-            if (!isOpen) return;
+            const dropdownItems = openDropdown.find(".dropdown-item");
+            const dropdownButton = openDropdown.siblings(".custom-dropdown-button");
+            let focusedIndex = dropdownItems.filter(".focused").index();
             
             if (e.key === "Escape") {
                 e.preventDefault();
-                dropdownMenu.addClass("closing");
+                openDropdown.addClass("closing");
                 setTimeout(() => {
-                    dropdownMenu.hide().removeClass("closing");
+                    openDropdown.hide().removeClass("closing");
                     dropdownButton.removeClass("active");
                 }, 150);
-                focusedIndex = -1;
             } else if (e.key === "ArrowDown") {
                 e.preventDefault();
                 focusedIndex = focusedIndex < dropdownItems.length - 1 ? focusedIndex + 1 : 0;
@@ -653,52 +664,117 @@ export class GameMenu {
         // Close dropdown when clicking outside
         $(document).off("click.dropdown").on("click.dropdown", (e) => {
             if (!$(e.target).closest(".custom-dropdown-wrapper").length) {
-                if (dropdownMenu.is(":visible")) {
-                    dropdownMenu.addClass("closing");
+                const openDropdown = this.menuElement.find(".dropdown-menu:visible");
+                if (openDropdown.length > 0) {
+                    const dropdownButton = openDropdown.siblings(".custom-dropdown-button");
+                    openDropdown.addClass("closing");
                     setTimeout(() => {
-                        dropdownMenu.hide().removeClass("closing");
+                        openDropdown.hide().removeClass("closing");
                         dropdownButton.removeClass("active");
                     }, 150);
-                    focusedIndex = -1;
                 }
             }
-        });
-
-        // Hover effect for keyboard navigation
-        dropdownItems.on("mouseenter", function() {
-            focusedIndex = dropdownItems.index(this);
-            dropdownItems.removeClass("focused");
-            $(this).addClass("focused");
         });
     }
 
     show() {
-        if (!this.isActive) {
-            this.isActive = true;
-            this.menuElement.fadeIn(200);
-            
-            // Блокируем взаимодействие с игрой
-            this.blockGameInteraction();
-            
-            // Reinitialize smooth scroll
-            this.initSmoothScroll();
-        }
+        if (this.isActive || this.isAnimating) return;
+        
+        this.isActive = true;
+        this.isAnimating = true;
+        console.log("Opening menu...");
+        
+        // Показываем display до rAF, чтобы браузер успел layout
+        this.menuElement.css('display', 'flex');
+        
+        this.blockGameInteraction();
+        
+        this.menuElement.on('click', (e) => {
+            if ($(e.target).is('#game-menu') && !this.isAnimating) {
+                this.hide();
+            }
+        });
+        
+        // Двойной rAF: первый — layout, второй — paint
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                this.menuElement.addClass('menu-open');
+                
+                // Слушаем только transform (он длиннее) — одно событие
+                this.onTransitionEnd(
+                    this.menuElement.find('.game-menu-content')[0],
+                    'transform',
+                    () => {
+                        this.isAnimating = false;
+                        this.initSmoothScroll();
+                        this.initSmoothSliders();
+                        console.log("Menu opened, isAnimating reset");
+                    }
+                );
+            });
+        });
     }
 
     hide() {
-        if (this.isActive) {
-            this.isActive = false;
-            this.menuElement.fadeOut(200);
-            
-            // Разблокируем взаимодействие с игрой
-            this.unblockGameInteraction();
-            
-            // Cleanup smooth scroll
-            if (this.smoothScroll) {
-                this.smoothScroll.destroy();
-                this.smoothScroll = null;
-            }
+        if (!this.isActive || this.isAnimating) return;
+        
+        this.isActive = false;
+        this.isAnimating = true;
+        console.log("Closing menu...");
+        
+        this.menuElement.off('click');
+        this.menuElement.removeClass('menu-open').addClass('menu-closing');
+        
+        this.unblockGameInteraction();
+        
+        // Чистим до конца анимации — пока скрыто, пользователь не видит
+        if (this.smoothScroll) {
+            this.smoothScroll.destroy();
+            this.smoothScroll = null;
         }
+        this.cleanupSmoothSliders();
+        
+        // Слушаем overlay — он заканчивается последним
+        this.onTransitionEnd(
+            this.menuElement[0],
+            'opacity',
+            () => {
+                this.menuElement.css('display', 'none');
+                this.menuElement.removeClass('menu-closing');
+                this.isAnimating = false;
+                console.log("Menu closed, isAnimating reset");
+            }
+        );
+    }
+
+    /**
+     * Утилита: вызывает callback один раз когда завершается
+     * анимация конкретного CSS-свойства на элементе.
+     * Fallback через setTimeout на случай если transitionend не придёт.
+     */
+    private onTransitionEnd(el: HTMLElement, property: string, callback: () => void) {
+        let called = false;
+        
+        const done = () => {
+            if (called) {
+                return;
+            };
+            called = true;
+            el.removeEventListener('transitionend', handler);
+            clearTimeout(fallback);
+            callback();
+        };
+        
+        const handler = (e: TransitionEvent) => {
+            if (e.target === el && e.propertyName === property) {
+                done();
+            }
+        };
+        
+        // Fallback: duration + 50ms запаса (самая длинная анимация 600ms)
+        const fallback = setTimeout(done, 650);
+
+        el.addEventListener('transitionend', handler);
     }
 
     private blockGameInteraction() {
@@ -736,6 +812,14 @@ export class GameMenu {
     }
 
     toggle() {
+        console.log("GameMenu.toggle() called, isAnimating:", this.isAnimating);
+        
+        // Prevent toggle during animation
+        if (this.isAnimating) {
+            console.log("Toggle blocked - animation in progress");
+            return;
+        }
+        
         if (this.isActive) {
             this.hide();
         } else {
@@ -755,7 +839,15 @@ export class GameMenu {
                 this.smoothScroll.destroy();
             }
             
-            this.smoothScroll = new SmoothScroll(scrollContainer);
+            // Проверяем, не обёрнут ли уже контент
+            const existingWrapper = scrollContainer.querySelector(".smooth-scroll-content");
+            if (existingWrapper) {
+                // Контент уже обёрнут, просто создаём новый экземпляр без пересоздания DOM
+                this.smoothScroll = new SmoothScroll(scrollContainer, true);
+            } else {
+                // Первый раз, создаём wrapper
+                this.smoothScroll = new SmoothScroll(scrollContainer, false);
+            }
             
             // Reinitialize interactions after smooth scroll wraps content
             setTimeout(() => {
@@ -797,6 +889,24 @@ export class GameMenu {
             });
         });
     }
+    
+    private initSmoothSliders() {
+        // Cleanup old sliders
+        this.cleanupSmoothSliders();
+        
+        // Find all sliders in smooth-scroll-content
+        const sliders = this.menuElement.find(".smooth-scroll-content .custom-slider");
+        
+        sliders.each((index, element) => {
+            const slider = new SmoothSlider(element as HTMLInputElement);
+            this.smoothSliders.set(element as HTMLInputElement, slider);
+        });
+    }
+    
+    private cleanupSmoothSliders() {
+        this.smoothSliders.forEach(slider => slider.destroy());
+        this.smoothSliders.clear();
+    }
 }
 
 // Smooth Scroll Class inspired by smooothy
@@ -807,19 +917,23 @@ class SmoothScroll {
     ease = 0.032; // Более плавный
     rafId: number | null = null;
     isScrolling = false;
+    boundOnWheel: (e: WheelEvent) => void;
     
-    constructor(container: HTMLElement) {
+    constructor(container: HTMLElement, skipWrap: boolean = false) {
         this.container = container;
-        this.init();
+        this.boundOnWheel = this.onWheel.bind(this);
+        this.init(skipWrap);
     }
     
-    init() {
+    init(skipWrap: boolean) {
         // Disable native scroll
         this.container.style.overflow = "hidden";
         
-        // Create scroll content wrapper
-        const content = this.container.innerHTML;
-        this.container.innerHTML = `<div class="smooth-scroll-content">${content}</div>`;
+        if (!skipWrap) {
+            // Create scroll content wrapper only if not exists
+            const content = this.container.innerHTML;
+            this.container.innerHTML = `<div class="smooth-scroll-content">${content}</div>`;
+        }
         
         const scrollContent = this.container.querySelector(".smooth-scroll-content") as HTMLElement;
         if (scrollContent) {
@@ -829,7 +943,7 @@ class SmoothScroll {
         }
         
         // Add wheel event
-        this.container.addEventListener("wheel", this.onWheel.bind(this), { passive: false });
+        this.container.addEventListener("wheel", this.boundOnWheel, { passive: false });
         
         // Start animation loop
         this.update();
@@ -878,6 +992,64 @@ class SmoothScroll {
         if (this.rafId) {
             cancelAnimationFrame(this.rafId);
         }
-        this.container.removeEventListener("wheel", this.onWheel.bind(this));
+        this.container.removeEventListener("wheel", this.boundOnWheel);
+    }
+}
+
+// Smooth Slider Class with lerp animation
+class SmoothSlider {
+    input: HTMLInputElement;
+    valueDisplay: HTMLElement | null;
+    current: number;
+    target: number;
+    rafId: number | null = null;
+    ease = 0.15;
+    
+    constructor(input: HTMLInputElement) {
+        this.input = input;
+        this.valueDisplay = input.parentElement?.querySelector('.slider-value') as HTMLElement;
+        this.current = parseFloat(input.value);
+        this.target = this.current;
+        
+        this.init();
+    }
+    
+    init() {
+        // Input event
+        this.input.addEventListener('input', this.onInput.bind(this));
+        
+        // Start animation loop
+        this.update();
+    }
+    
+    onInput = () => {
+        this.target = parseFloat(this.input.value);
+    }
+    
+    update = () => {
+        // Lerp current to target
+        if (Math.abs(this.target - this.current) > 0.1) {
+            this.current += (this.target - this.current) * this.ease;
+            
+            // Update display
+            if (this.valueDisplay) {
+                this.valueDisplay.textContent = Math.round(this.current) + '%';
+            }
+        } else {
+            this.current = this.target;
+            if (this.valueDisplay) {
+                this.valueDisplay.textContent = Math.round(this.current) + '%';
+            }
+        }
+        
+        // Continue loop
+        this.rafId = requestAnimationFrame(this.update);
+    }
+    
+    destroy() {
+        if (this.rafId) {
+            cancelAnimationFrame(this.rafId);
+        }
+        this.input.removeEventListener('input', this.onInput);
     }
 }
