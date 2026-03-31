@@ -27,6 +27,7 @@ import type { PlaneBarn } from "../objects/plane";
 import type { Player, PlayerBarn } from "../objects/player";
 import { SDK } from "../sdk/sdk";
 import type { Localization } from "./localization";
+import { GameMenu } from "./gameMenu";
 import { PieTimer } from "./pieTimer";
 import type { Touch } from "./touch";
 import type { UiManager2 } from "./ui2";
@@ -73,6 +74,7 @@ interface ContainerWithMask extends PIXI.Container {
 type PrevStatus = Pick<PlayerStatus, "downed" | "dead" | "disconnected" | "role">;
 export class UiManager {
     m_pieTimer = new PieTimer();
+    gameMenu!: GameMenu;
     gameElem = $("#ui-game");
     statsMain = $("#ui-stats");
     statsElem = $("#ui-stats-bg");
@@ -284,6 +286,9 @@ export class UiManager {
         this.touch = touch;
         this.inputBinds = inputBinds;
         this.inputBindUi = inputBindUi;
+
+        // Инициализируем игровое меню
+        this.gameMenu = new GameMenu();
 
         this.roleMenuConfirm.on("click", (e) => {
             e.stopPropagation();
@@ -2322,6 +2327,14 @@ export class UiManager {
                 }
             }
         }
+    }
+
+    toggleGameMenu() {
+        this.gameMenu.toggle();
+    }
+
+    isGameMenuOpen() {
+        return this.gameMenu.isVisible();
     }
 
     setCurrentGameTab(tab: string) {

@@ -328,6 +328,7 @@ export enum Key {
     Up = 38,
     Right = 39,
     Down = 40,
+    Insert = 45,
     Zero = 48,
     One = 49,
     Two = 50,

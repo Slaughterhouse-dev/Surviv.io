@@ -464,9 +464,22 @@ export class Game {
             this.m_camera.m_targetZoom,
         );
         this.m_audioManager.cameraPos = v2.copy(this.m_camera.m_pos);
+        
+        // Проверяем открыто ли игровое меню
+        const isGameMenuOpen = this.m_uiManager.isGameMenuOpen();
+        
         if (this.m_input.keyPressed(Key.Escape)) {
             this.m_uiManager.toggleEscMenu();
         }
+        if (this.m_input.keyPressed(Key.Insert)) {
+            this.m_uiManager.toggleGameMenu();
+        }
+        
+        // Если игровое меню открыто, не обрабатываем игровой ввод
+        if (isGameMenuOpen) {
+            return;
+        }
+        
         // Large Map
         if (
             this.m_inputBinds.isBindPressed(Input.ToggleMap) ||
